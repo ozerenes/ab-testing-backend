@@ -1,6 +1,6 @@
 /**
  * In-memory store for user-to-variant assignments.
- * Key: `${experimentId}:${userId}` -> variantId
+ * Key: `${experimentId}:${userId}` -> { experimentId, userId, variantKey, assignedAt }
  */
 const assignments = new Map();
 
@@ -12,9 +12,9 @@ function get(experimentId, userId) {
   return assignments.get(getKey(experimentId, userId)) ?? null;
 }
 
-function set(experimentId, userId, variantId) {
+function set(experimentId, userId, variantKey) {
   const key = getKey(experimentId, userId);
-  assignments.set(key, { experimentId, userId, variantId, assignedAt: new Date().toISOString() });
+  assignments.set(key, { experimentId, userId, variantKey, assignedAt: new Date().toISOString() });
   return assignments.get(key);
 }
 
