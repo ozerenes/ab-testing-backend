@@ -1,6 +1,6 @@
 /**
  * In-memory store for experiments.
- * Production-style: single source of truth, no DB.
+ * Model: id, name, variants [{ key, weight }], createdAt.
  */
 const experiments = new Map();
 let nextId = 1;
@@ -19,13 +19,12 @@ function getById(id) {
 
 function create(data) {
   const id = generateId();
+  const createdAt = new Date().toISOString();
   const experiment = {
     id,
     name: data.name,
-    description: data.description ?? '',
-    status: data.status ?? 'draft',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    variants: data.variants ?? [],
+    createdAt,
   };
   experiments.set(id, experiment);
   return experiment;
@@ -39,7 +38,6 @@ function update(id, data) {
     ...data,
     id: existing.id,
     createdAt: existing.createdAt,
-    updatedAt: new Date().toISOString(),
   };
   experiments.set(id, updated);
   return updated;

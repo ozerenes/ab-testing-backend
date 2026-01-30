@@ -7,6 +7,7 @@ function listVariants(experimentId) {
   if (!experimentId) return storage.variants.getAll();
   const experiment = storage.experiments.getById(experimentId);
   if (!experiment) return null;
+  if (Array.isArray(experiment.variants)) return experiment.variants;
   return storage.variants.getByExperimentId(experimentId);
 }
 
