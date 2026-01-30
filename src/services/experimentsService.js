@@ -3,27 +3,53 @@
  */
 const storage = require('../storage');
 
+function validateVariants(variants) {
+  if (!Array.isArray(variants)) {
+    const err = new Error('variants must be an array');
+    err.code = 'VALIDATION_ERROR';
+    throw err;
+  }
+  return variants.map((v, i) => {
+    if (v == null || typeof v !== 'object') {
+      const err = new Error(`variants[${i}]: must be an object with key and weight`);
+      err.code = 'VALIDATION_ERROR';
+      throw err;
+    }
+    const key = v.key != null ? String(v.key).trim() : '';
+    if (!key) {
+      const err = new Error(`variants[${i}]: key is required`);
+      err.code = 'VALIDATION_ERROR';
+      throw err;
+    }
+    const weight = Number(v.weight);
+    if (Number.isNaN(weight) || weight < 0) {
+      const err = new Error(`variants[${i}]: weight must be a non-negative number`);
+      err.code = 'VALIDATION_ERROR';
+      throw err;
+    }
+    return { key, weight };
+  });
+}
+
 function listExperiments() {
   return storage.experiments.getAll();
 }
 
 function getExperiment(id) {
-  const experiment = storage.experiments.getById(id);
-  if (!experiment) return null;
-  const variants = storage.variants.getByExperimentId(id);
-  return { ...experiment, variants };
+  return storage.experiments.getById(id);
 }
 
 function createExperiment(data) {
-  if (!data?.name?.trim()) {
-    const err = new Error('Experiment name is required');
+  const name = data?.name != null ? String(data.name).trim() : '';
+  if (!name) {
+    const err = new Error('name is required');
     err.code = 'VALIDATION_ERROR';
     throw err;
   }
+  const variants = validateVariants(data?.variants ?? []);
   return storage.experiments.create({
-    name: data.name.trim(),
-    description: data.description ?? '',
-    status: data.status ?? 'draft',
+    name,
+    variants,
   });
 }
 
@@ -31,16 +57,22 @@ function updateExperiment(id, data) {
   const existing = storage.experiments.getById(id);
   if (!existing) return null;
   const payload = {};
-  if (data.name !== undefined) payload.name = String(data.name).trim();
-  if (data.description !== undefined) payload.description = data.description;
-  if (data.status !== undefined) payload.status = data.status;
+  if (data.name !== undefined) {
+    const name = String(data.name).trim();
+    if (!name) {
+      const err = new Error('name cannot be empty');
+      err.code = 'VALIDATION_ERROR';
+      throw err;
+    }
+    payload.name = name;
+  }
+  if (data.variants !== undefined) payload.variants = validateVariants(data.variants);
   return storage.experiments.update(id, payload);
 }
 
 function deleteExperiment(id) {
   const existing = storage.experiments.getById(id);
   if (!existing) return null;
-  storage.variants.removeByExperimentId(id);
   storage.experiments.remove(id);
   return { deleted: true, id };
 }

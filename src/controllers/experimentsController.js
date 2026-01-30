@@ -44,6 +44,9 @@ function update(req, res, next) {
     }
     res.json({ data: experiment });
   } catch (err) {
+    if (err.code === 'VALIDATION_ERROR') {
+      return res.status(400).json({ error: err.message });
+    }
     next(err);
   }
 }
