@@ -47,10 +47,15 @@ function createExperiment(data) {
     throw err;
   }
   const variants = validateVariants(data?.variants ?? []);
-  return storage.experiments.create({
+  const payload = {
     name,
     variants,
-  });
+    description: data?.description != null ? String(data.description).trim() : undefined,
+    status: data?.status ?? 'draft',
+    startDate: data?.startDate ?? undefined,
+    endDate: data?.endDate ?? undefined,
+  };
+  return storage.experiments.create(payload);
 }
 
 function updateExperiment(id, data) {
@@ -67,6 +72,10 @@ function updateExperiment(id, data) {
     payload.name = name;
   }
   if (data.variants !== undefined) payload.variants = validateVariants(data.variants);
+  if (data.description !== undefined) payload.description = data.description === '' ? undefined : String(data.description).trim();
+  if (data.status !== undefined) payload.status = data.status;
+  if (data.startDate !== undefined) payload.startDate = data.startDate || undefined;
+  if (data.endDate !== undefined) payload.endDate = data.endDate || undefined;
   return storage.experiments.update(id, payload);
 }
 
