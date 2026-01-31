@@ -2,6 +2,7 @@
  * HTTP handlers for experiments.
  */
 const experimentsService = require('../services/experimentsService');
+const metricsService = require('../services/metricsService');
 
 function list(req, res, next) {
   try {
@@ -63,10 +64,23 @@ function remove(req, res, next) {
   }
 }
 
+function getStats(req, res, next) {
+  try {
+    const stats = metricsService.getExperimentMetrics(req.params.id);
+    if (!stats) {
+      return res.status(404).json({ error: 'Experiment not found' });
+    }
+    res.json({ data: stats });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   list,
   get,
   create,
   update,
   remove,
+  getStats,
 };
