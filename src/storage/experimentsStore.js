@@ -72,12 +72,17 @@ function getById(id) {
 
 function create(data) {
   const id = generateId();
-  const createdAt = new Date().toISOString();
+  const now = new Date().toISOString();
   const experiment = {
     id,
     name: data.name,
     variants: data.variants ?? [],
-    createdAt,
+    createdAt: now,
+    updatedAt: now,
+    ...(data.description != null && { description: data.description }),
+    ...(data.status != null && { status: data.status }),
+    ...(data.startDate != null && { startDate: data.startDate }),
+    ...(data.endDate != null && { endDate: data.endDate }),
   };
   experiments.set(id, experiment);
   return experiment;
@@ -91,6 +96,7 @@ function update(id, data) {
     ...data,
     id: existing.id,
     createdAt: existing.createdAt,
+    updatedAt: new Date().toISOString(),
   };
   experiments.set(id, updated);
   return updated;
