@@ -1,13 +1,13 @@
 /**
- * HTTP handlers for experiments.
+ * HTTP handlers for experiments. Thin layer: delegate to services, map responses.
  */
 const experimentsService = require('../services/experimentsService');
 const metricsService = require('../services/metricsService');
+const { sendData, sendNoContent, sendNotFound, handleServiceError } = require('../utils/controllerHelpers');
 
 function list(req, res, next) {
   try {
-    const experiments = experimentsService.listExperiments();
-    res.json({ data: experiments });
+    sendData(res, experimentsService.listExperiments());
   } catch (err) {
     next(err);
   }
@@ -16,10 +16,8 @@ function list(req, res, next) {
 function get(req, res, next) {
   try {
     const experiment = experimentsService.getExperiment(req.params.id);
-    if (!experiment) {
-      return res.status(404).json({ error: 'Experiment not found' });
-    }
-    res.json({ data: experiment });
+    if (!experiment) return sendNotFound(res, 'Experiment not found');
+    sendData(res, experiment);
   } catch (err) {
     next(err);
   }
@@ -28,37 +26,27 @@ function get(req, res, next) {
 function create(req, res, next) {
   try {
     const experiment = experimentsService.createExperiment(req.body);
-    res.status(201).json({ data: experiment });
+    sendData(res, experiment, { status: 201 });
   } catch (err) {
-    if (err.code === 'VALIDATION_ERROR') {
-      return res.status(400).json({ error: err.message });
-    }
-    next(err);
+    handleServiceError(err, res, next);
   }
 }
 
 function update(req, res, next) {
   try {
     const experiment = experimentsService.updateExperiment(req.params.id, req.body);
-    if (!experiment) {
-      return res.status(404).json({ error: 'Experiment not found' });
-    }
-    res.json({ data: experiment });
+    if (!experiment) return sendNotFound(res, 'Experiment not found');
+    sendData(res, experiment);
   } catch (err) {
-    if (err.code === 'VALIDATION_ERROR') {
-      return res.status(400).json({ error: err.message });
-    }
-    next(err);
+    handleServiceError(err, res, next);
   }
 }
 
 function remove(req, res, next) {
   try {
     const result = experimentsService.deleteExperiment(req.params.id);
-    if (!result) {
-      return res.status(404).json({ error: 'Experiment not found' });
-    }
-    res.status(204).send();
+    if (!result) return sendNotFound(res, 'Experiment not found');
+    sendNoContent(res);
   } catch (err) {
     next(err);
   }
@@ -67,10 +55,8 @@ function remove(req, res, next) {
 function getStats(req, res, next) {
   try {
     const stats = metricsService.getExperimentMetrics(req.params.id);
-    if (!stats) {
-      return res.status(404).json({ error: 'Experiment not found' });
-    }
-    res.json({ data: stats });
+    if (!stats) return sendNotFound(res, 'Experiment not found');
+    sendData(res, stats);
   } catch (err) {
     next(err);
   }
