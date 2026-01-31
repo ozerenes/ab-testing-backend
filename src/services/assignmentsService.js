@@ -1,8 +1,20 @@
 /**
  * Business logic for user-to-variant assignments.
- * Assigns a variant (by key) to a user for an experiment (weighted random).
+ * Deterministic assignment: same userId always receives the same variant (via hashing).
  */
+const crypto = require('crypto');
 const storage = require('../storage');
+
+/**
+ * Deterministic hash of (experimentId, userId) -> value in [0, 1).
+ * Same inputs always produce the same output.
+ */
+function hashToUnitInterval(experimentId, userId) {
+  const input = `${String(experimentId)}:${String(userId)}`;
+  const hash = crypto.createHash('sha256').update(input, 'utf8').digest();
+  const n = hash.readUInt32BE(0);
+  return n / (0xffffffff + 1);
+}
 
 function getAssignment(experimentId, userId) {
   const experiment = storage.experiments.getById(experimentId);
@@ -29,7 +41,8 @@ function assignVariant(experimentId, userId) {
     const assignment = storage.assignments.set(experimentId, userId, chosen.key);
     return { ...assignment, variant: chosen };
   }
-  let r = Math.random() * totalWeight;
+  const deterministicValue = hashToUnitInterval(experimentId, userId);
+  let r = deterministicValue * totalWeight;
   for (const v of variants) {
     r -= v.weight ?? 0;
     if (r <= 0) {
